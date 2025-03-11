@@ -1,0 +1,35 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Addon teste",
+    "name": "Teste",
+    "min_engine_version": [
+      1,
+      20,
+      50
+    ],
+    "base_game_version": [
+      1,
+      20,
+      60
+    ],
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "uuid": "4857bddc-b5ea-4592-ae4e-2b4d0c059344"
+  },
+  "modules": [
+    {
+      "description": "test",
+      "type": "resources",
+      "uuid": "4b057cef-8181-4192-9263-de9297c82534",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}

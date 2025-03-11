@@ -1,0 +1,56 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Addon teste",
+    "name": "Teste",
+    "min_engine_version": [
+      1,
+      20,
+      50
+    ],
+    "base_game_version": [
+      1,
+      20,
+      60
+    ],
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "uuid": "4a974d76-a42f-4ca1-bb85-df353d305a9a"
+  },
+  "modules": [
+    {
+      "description": "test",
+      "type": "data",
+      "uuid": "5275a596-e6cb-45de-8114-9ca3d52a18d9",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "description": "test",
+      "type": "script",
+      "uuid": "a0c0eb25-344a-409b-a4b1-db4af7c040a3",
+      "language": "javascript",
+      "entry": "scripts/main.js",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.17.0"
+    }
+  ],
+  "capabilities": [
+    "experimental_custom_ui"
+  ]
+}
