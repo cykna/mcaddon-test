@@ -1,3 +1,14 @@
-import { world } from '@minecraft/server';
+// src/abc.ts
+function add(a, b) {
+  return a + b;
+}
+function sub(a, b) {
+  return a - b;
+}
 
-world.sendMessage("Hello from scripts");
+// src/main.ts
+function main() {
+  const a = sub(add(12, 45), 12);
+  console.log(a);
+}
+main();

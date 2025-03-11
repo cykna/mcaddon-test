@@ -1,0 +1,13 @@
+{
+  "files": [
+    "src/**/*.ts"
+  ],
+  "compilerOptions": {
+    "outDir": "./scripts",
+    "target": "ESNext",
+    "incremental": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "removeComments": true
+  }
+}
