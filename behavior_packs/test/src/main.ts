@@ -1,6 +1,4 @@
-import { add, sub } from "./abc.ts";
-function main() {
-  const a = sub(add(12, 45), 12)
-  console.log(a);
-}
-main();
+import { world } from "@minecraft/server";
+import { initializer } from "./events/initialize";
+
+world.beforeEvents.worldInitialize.subscribe(initializer);

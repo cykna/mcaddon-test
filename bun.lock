@@ -1,0 +1,15 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "dependencies": {
+        "@minecraft/server": "^1.17.0",
+      },
+    },
+  },
+  "packages": {
+    "@minecraft/common": ["@minecraft/common@1.2.0", "", {}, "sha512-JdmEq4P3Z/FtoBzhLijFgMSVFnFRrUoLwY8DHHrgtFo0mfLTOLTB1RErYjLMsA6b7BGVNxkX/pfFRiH7QZ0XwQ=="],
+
+    "@minecraft/server": ["@minecraft/server@1.17.0", "", { "dependencies": { "@minecraft/common": "^1.1.0" } }, "sha512-wiirWhwGcUexaPTxsJ6es7pHVil0o6dG6YCUKBeMOfgZI4x8Rt2MP6UQhgEj7NqlCwzk39/EdRoiVyEx4davJQ=="],
+  }
+}
