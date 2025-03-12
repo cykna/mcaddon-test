@@ -28,7 +28,7 @@ class CustomDiamondComponent extends BaseItemComponent {
     this.info = info;
   }
   onHitEntity(event) {
-    event.attackingEntity.applyKnockback(0, 1, 1, 0.5);
+    event.attackingEntity.applyKnockback(0, -1, 1, 0.5);
     console.warn("Uau porque tão alto?", event);
   }
 }
