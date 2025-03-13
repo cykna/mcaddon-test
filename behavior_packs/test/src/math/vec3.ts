@@ -3,6 +3,12 @@ export class Vec3 {
   static readonly UP = Object.freeze(new this(0, 1, 0));
   static readonly RIGHT = Object.freeze(new this(1, 0, 0));
   static readonly FORWARD = Object.freeze(new this(0, 0, -1));
+
+  static create<T extends { x: number, y: number, z: number }>(obj: T) {
+    return new Vec3(obj.x, obj.y, obj.z);
+  }
+
+
   /*
   * Returns a new Vec3 representing the addition of the given ones
   */
@@ -128,7 +134,7 @@ export class Vec3 {
     this.y = -this.y;
     this.z = -this.z;
   }
-  /*
+  /**
    * Creates a copy of this vector and returns it
    */
   create_copy() {
@@ -240,21 +246,21 @@ export class Vec3 {
     return this;
   }
 
-  /*
+  /**
   * Returns if the vector is normalized 
   */
   is_normalized() {
     return Math.abs(1 - this.magnitude_squared()) < Number.EPSILON;
   }
 
-  /*
+  /**
   * Returns the cross vector between this and the given vector, same as Vec3.cross(this, rhs);
   */
   cross(rhs: Vec3) {
     return Vec3.cross(this, rhs);
   }
 
-  /*
+  /**
    * Set this vector to be the cross product between it and rhs, same as this = this.cross(rhs);
    */
   set_cross(rhs: Vec3) {
@@ -264,27 +270,27 @@ export class Vec3 {
     return this;
   }
 
-  /*
+  /**
    * Calculates the distance squared between this vector and the given one
    */
   distance_squared(rhs: Vec3) {
     return Vec3.sub(this, rhs).magnitude_squared()
   }
 
-  /*
+  /**
    * Calculates the distancebetween this vector and the given one
    */
   distance(rhs: Vec3) {
     return Vec3.sub(this, rhs).magnitude()
   }
 
-  /*
+  /**
    * Calculates the dot product between this and the given vector
    */
   dot(rhs: Vec3) {
     return this.x * rhs.x + this.y * rhs.y + this.z * rhs.z
   }
-  /*
+  /**
    * Moves towards the given vector based on dt
    * obs: Modifies 'rhs' object
    */
@@ -322,5 +328,8 @@ export class Vec3 {
     const tx = imag.cross(t);
     this.add(t.mul_scalar(q.w).add(tx));
     return this;
+  }
+  toString() {
+    return `Vec3 { x:${this.x}, y:${this.y}, z:${this.z}}`;
   }
 }

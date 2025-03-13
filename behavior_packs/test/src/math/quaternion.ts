@@ -3,6 +3,10 @@ import { Vec3 } from "./vec3";
 
 
 export class Quaternion {
+  static rad = 1 / (180 / Math.PI);
+  static x_axis = this.axis_angle(Vec3.RIGHT, this.rad);
+  static y_axis = this.axis_angle(Vec3.UP, this.rad);
+  static z_axis = this.axis_angle(Vec3.FORWARD, this.rad);
   //Returns a new quaternion representing the conjugate of the given one
   static conjugate(target: Quaternion) {
     return new Quaternion(target.w, -target.x, -target.y, -target.z);
