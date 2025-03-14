@@ -1,8 +1,8 @@
 // src/main.ts
-import { world as world4 } from "@minecraft/server";
+import { world as world3 } from "@minecraft/server";
 
 // src/events/initialize.ts
-import { system } from "@minecraft/server";
+import { system as system2 } from "@minecraft/server";
 
 // src/components/index.ts
 var custom_item_components = [];
@@ -14,6 +14,42 @@ class BaseItemComponent {
     custom_item_components.push(this);
   }
   constructor(curr_tick, server_info) {
+  }
+}
+
+// src/components/items/custom_diamond.ts
+import { system } from "@minecraft/server";
+
+// src/math/vec2.ts
+class Vec2 {
+  x;
+  y;
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+  xx() {
+    return new Vec2(this.x, this.x);
+  }
+  xy() {
+    return new Vec2(this.x, this.y);
+  }
+  yx() {
+    return new Vec2(this.y, this.x);
+  }
+  yy() {
+    return new Vec2(this.y, this.y);
+  }
+  mul_scalar(n) {
+    this.x *= n;
+    this.y *= n;
+    return this;
+  }
+  magnitude() {
+    return (this.x * this.x + this.y * this.y) ** 0.5;
+  }
+  magnitude_squared() {
+    return this.x * this.x + this.y * this.y;
   }
 }
 
@@ -52,11 +88,6 @@ class Vec3 {
   static div_scalar(a, n) {
     return new Vec3(a.x / n, a.y / n, a.z / n);
   }
-  static normalized(v) {
-    const vec = v.create_copy();
-    vec.normalize();
-    return vec;
-  }
   static negative(v) {
     return new Vec3(-v.x, -v.y, -v.z);
   }
@@ -86,6 +117,33 @@ class Vec3 {
     this.y = y;
     this.z = z;
   }
+  xx() {
+    return new Vec2(this.x, this.x);
+  }
+  xy() {
+    return new Vec2(this.x, this.y);
+  }
+  xz() {
+    return new Vec2(this.x, this.z);
+  }
+  yx() {
+    return new Vec2(this.y, this.x);
+  }
+  yy() {
+    return new Vec2(this.y, this.y);
+  }
+  yz() {
+    return new Vec2(this.y, this.z);
+  }
+  zx() {
+    return new Vec2(this.z, this.x);
+  }
+  zy() {
+    return new Vec2(this.z, this.y);
+  }
+  zz() {
+    return new Vec2(this.z, this.z);
+  }
   negate() {
     this.x = -this.x;
     this.y = -this.y;
@@ -107,15 +165,15 @@ class Vec3 {
     return this;
   }
   mul(rhs) {
-    this.x -= rhs.x;
-    this.y -= rhs.y;
-    this.z -= rhs.z;
+    this.x *= rhs.x;
+    this.y *= rhs.y;
+    this.z *= rhs.z;
     return this;
   }
   div(rhs) {
-    this.x -= rhs.x;
-    this.y -= rhs.y;
-    this.z -= rhs.z;
+    this.x /= rhs.x;
+    this.y /= rhs.y;
+    this.z /= rhs.z;
     return this;
   }
   add_scalar(rhs) {
@@ -147,14 +205,18 @@ class Vec3 {
     return this.x * this.x + this.y * this.y + this.z * this.z;
   }
   magnitude() {
-    return Math.pow(this.x * this.x + this.y * this.y + this.z * this.z, 0.5);
+    return (this.x * this.x + this.y * this.y + this.z * this.z) ** 0.5;
   }
   normalize() {
     const len = this.magnitude();
-    if (1 - len < Number.EPSILON)
-      return;
+    if (Math.abs(1 - len) < 0.0002)
+      return this;
     this.mul_scalar(1 / len);
     return this;
+  }
+  normalized() {
+    const recip = 1 / this.magnitude();
+    return new Vec3(this.x * recip, this.y * recip, this.z * recip);
   }
   set_magnitude(n) {
     const len = this.magnitude();
@@ -164,7 +226,7 @@ class Vec3 {
     return this;
   }
   is_normalized() {
-    return Math.abs(1 - this.magnitude_squared()) < Number.EPSILON;
+    return Math.abs(1 - this.magnitude_squared()) < 0.0002;
   }
   cross(rhs) {
     return Vec3.cross(this, rhs);
@@ -176,27 +238,32 @@ class Vec3 {
     return this;
   }
   distance_squared(rhs) {
-    return Vec3.sub(this, rhs).magnitude_squared();
+    const x = (this.x - rhs.x) ** 2;
+    const y = (this.y - rhs.y) ** 2;
+    const z = (this.z - rhs.z) ** 2;
+    return x + y + z;
   }
   distance(rhs) {
-    return Vec3.sub(this, rhs).magnitude();
+    const x = (this.x - rhs.x) ** 2;
+    const y = (this.y - rhs.y) ** 2;
+    const z = (this.z - rhs.z) ** 2;
+    return (x + y + z) ** 0.5;
   }
   dot(rhs) {
     return this.x * rhs.x + this.y * rhs.y + this.z * rhs.z;
   }
   move_towards(rhs, dt) {
-    const len = rhs.sub(this).magnitude_squared();
+    const len = this.distance_squared(rhs);
     if (len < dt * dt || len <= 0.01) {
       this.x = rhs.x;
       this.y = rhs.y;
       this.z = rhs.z;
       return this;
-    } else {
-      return this.add(rhs.div_scalar(len * dt));
-    }
+    } else
+      return this.add(Vec3.div_scalar(rhs, len * dt));
   }
   reflect(normal) {
-    return this.sub(normal.mul_scalar(2 * this.dot(normal)));
+    return this.sub(Vec3.mul_scalar(normal, 2 * this.dot(normal)));
   }
   angle_between(target) {
     return Math.acos(this.dot(target) / Math.sqrt(this.magnitude_squared() * target.magnitude_squared()));
@@ -213,7 +280,13 @@ class Vec3 {
   }
 }
 
+// src/entities/helpers.ts
+import { Player } from "@minecraft/server";
+
 // src/math/helpers.ts
+function sign_relative(n, target) {
+  return +(n > target) - +(n < target);
+}
 function sincos(n) {
   return [Math.sin(n), Math.cos(n)];
 }
@@ -321,210 +394,28 @@ class Quaternion {
 }
 
 // src/entities/helpers.ts
-import { Player } from "@minecraft/server";
-function is_player(entity) {
-  return entity instanceof Player && entity.typeId == "minecraft:player";
-}
-
-// src/entities/attributes.ts
-import { world } from "@minecraft/server";
-var AttributeManager = new class {
-  id = "none";
-  binded_attribute = "cy:level" /* Level */;
-  bind_target(target) {
-    this.id = target.id;
-  }
-  bind_attribute(attrib) {
-    this.binded_attribute = attrib;
-  }
-  get_attribute(attrib_name, target) {
-    const attrib = (target ?? world.getEntity(this.id))?.getDynamicProperty(attrib_name);
-    if (attrib == undefined)
-      return 0;
-    if (attrib instanceof Number || attrib instanceof Boolean)
-      return +attrib;
-    if (attrib instanceof String || attrib instanceof Object)
-      return 0;
-    return 0;
-  }
-  set_attribute(attrib, n, target) {
-    return (target ?? world.getEntity(this.id))?.setDynamicProperty(attrib, n);
-  }
-  get value() {
-    return this.get_attribute(this.binded_attribute);
-  }
-  set value(n) {
-    this.set_attribute(this.binded_attribute, n);
-  }
-};
-
-// src/entities/damage.ts
-function dmg_type_has(dmg, target) {
-  return (dmg & target) != 0;
-}
-function dmg_resistance(dmg) {
-  switch (dmg) {
-    case 1 /* Fire */:
-      return "cy:fire_res" /* FireResistance */;
-    case 2 /* Ice */:
-      return "cy:ice_res" /* IceResistance */;
-    case 4 /* Lightning */:
-      return "cy:lightining_res" /* LightningResistance */;
-    case 8 /* Dark */:
-      return "cy:dark_res" /* DarkResistance */;
-    case 16 /* Physical */:
-      return "cy:phys_res" /* PhysicalResistance */;
-  }
-}
-function dmg_resistances(dmg) {
-  const out = new Array(5);
-  for (let i = 1, idx = 0;i < 1 << 4; i <<= 1)
-    if (dmg_type_has(dmg, i))
-      out[idx++] = dmg_resistance(i);
-  return out.filter((v) => v != null);
-}
-
-// src/entities/player/health.ts
-class HealthAttribute {
-  target;
-  health;
-  constructor(target) {
-    this.target = target;
-    this.health = target.getComponent("minecraft:health");
-  }
-  max_bar_health() {
-    return this.target.totalXpNeededForNextLevel;
-  }
-  current_bar_health() {
-    return this.target.xpEarnedAtCurrentLevel;
-  }
-  remove_artificial_health() {
-    return this.target.resetLevel();
-  }
-  percentage_of_bar() {
-    return this.bar_number() % 1;
-  }
-  bar_number() {
-    const totalxp = this.target.getTotalXp();
-    if (totalxp <= 352)
-      return (9 + totalxp) ** 0.5 - 3;
-    if (totalxp <= 1507)
-      return ((totalxp - 195.975) * 0.4) ** 0.5 + 8.1;
-    return 18.05 + (0.222 * (totalxp - 752.986)) ** 0.5;
-  }
-  limit_bar_number(n) {
-    if (this.bar_number() > n)
-      this.set_bar_number(n);
-  }
-  set_bar_number(n) {
-    this.target.resetLevel();
-    this.target.addLevels(n);
-  }
-  limit_health(n) {
-    const xp = this.target.getTotalXp();
-    if (xp > n) {
-      this.target.resetLevel();
-      this.target.addExperience(n);
-    }
-  }
-  heal(n) {
-    const maxlife = AttributeManager.get_attribute("cy:max_life" /* MaxLife */, this.target) + 200;
-    if (this.target.getTotalXp() == 0) {
-      let current;
-      if (n > this.health.effectiveMax - (current = this.health.currentValue)) {
-        this.health.resetToMaxValue();
-        this.target.addExperience(Math.min(maxlife, n - current));
-      } else
-        this.health.setCurrentValue(current + n);
-    } else {
-      this.target.addExperience(Math.min(maxlife, n));
-    }
-  }
-  heal_bars(n) {
-    if (this.health.currentValue < this.health.effectiveMax) {
-      this.health.resetToMaxValue();
-      --n;
-    }
-    this.target.addLevels(n);
-  }
-  dmg_val(dmg) {
-    let dmg_val = dmg.inner_damage(this.target);
-    for (const boost of dmg.boosts())
-      dmg_val *= boost.boost_multiplier(this.target);
-    AttributeManager.bind_target(this.target);
-    dmg_val -= AttributeManager.get_attribute("cy:damage_reduction" /* DmgReduction */);
-    for (const dmgres of dmg_resistances(dmg.dmg_type()))
-      dmg_val *= 1 - AttributeManager.get_attribute(dmgres);
-    return (dmg_val + dmg.extraDmg(this.target)) * dmg.damage_multiplier(this.target) * (1 + +(Math.random() > dmg.crit_rate(this.target)) * dmg.crit_damage(this.target));
-  }
-  damage(dmg) {
-    let dmg_val = dmg.inner_damage(this.target);
-    for (const boost of dmg.boosts())
-      dmg_val *= boost.boost_multiplier(this.target);
-    AttributeManager.bind_target(this.target);
-    dmg_val -= AttributeManager.get_attribute("cy:damage_reduction" /* DmgReduction */);
-    for (const dmgres of dmg_resistances(dmg.dmg_type()))
-      dmg_val *= 1 - AttributeManager.get_attribute(dmgres);
-    dmg_val += dmg.extraDmg(this.target);
+function shoot_entity(shooter, opts) {
+  const dirnorm = opts.direction.normalized();
+  if (opts.precision != 1) {
+    const precision_offset = (1 - opts.precision) * 0.31415;
+    let precision;
     {
-      const crit = +(Math.random() > dmg.crit_rate(this.target));
-      dmg_val *= 1 + crit * dmg.crit_damage(this.target);
+      const random = Math.random();
+      precision = sign_relative(random, 0.5) * random * precision_offset;
     }
-    dmg_val *= dmg.damage_multiplier(this.target);
-    if (dmg_val > this.total_artificial_health()) {
-      const xp = this.total_artificial_health();
-      dmg_val -= xp;
-      this.target.addExperience(-xp);
+    dirnorm.rotate_by(Quaternion.axis_angle(new Vec3(0, 1, 0).normalized(), precision));
+    {
+      const random = Math.random();
+      precision = sign_relative(random, 0.5) * random * precision_offset;
     }
-    this.health.setCurrentValue(this.health.currentValue - +(dmg_val > 0) * dmg_val);
+    dirnorm.rotate_by(Quaternion.axis_angle(new Vec3(0, 0, 1).normalized(), precision));
   }
-  total_artificial_health() {
-    return this.target.getTotalXp();
-  }
-  total_health() {
-    return this.target.getTotalXp() + this.health.currentValue;
-  }
+  const projectile = shooter.dimension.spawnEntity(opts.projectile_id, Vec3.add(dirnorm, shooter.getHeadLocation()));
+  const force = (opts.force ?? 1) * (opts.force_multiplier ?? 1);
+  dirnorm.x *= force;
+  dirnorm.z *= force;
+  projectile.applyImpulse(dirnorm);
 }
-
-// src/helpers.ts
-import { world as world2 } from "@minecraft/server";
-function log(msg) {
-  world2.sendMessage(msg.toString());
-}
-function format(template, ...args) {
-  let argidx = 0;
-  return template.replace(/{:?x?}/g, (match) => {
-    if (argidx > args.length)
-      throw new Error(`Expected printing ${args.length} args, but number of templates does not match`);
-    const v = args[argidx];
-    if (match === "{}") {
-      if (!v.toString)
-        throw new Error(`Expected ${argidx} to implement 'toString'`);
-      return v.toString();
-    } else if (match === "{:?}") {
-      if (!v.asDbg)
-        throw new Error(`Expected ${argidx} to implement 'asDbg'`);
-      return v.asDbg();
-    } else if (match === "{:x}") {
-      if (!v.toHex)
-        throw new Error(`Expected ${argidx} to implement 'toHex'`);
-      return v.toHex();
-    } else if (match === "{:J}") {
-      if (!v.toJSON)
-        throw new Error(`Expected ${argidx} to implement 'toJSON'`);
-      return v.toJSON();
-    }
-    argidx++;
-    log(match);
-    return match;
-  });
-}
-function println(template, ...args) {
-  log(format(template, ...args));
-}
-Number.prototype.asHex = function() {
-  return this.toString(16);
-};
 
 // src/components/items/custom_diamond.ts
 class CustomDiamondComponent extends BaseItemComponent {
@@ -536,25 +427,30 @@ class CustomDiamondComponent extends BaseItemComponent {
     this.tick = tick;
     this.info = info;
   }
-  onHitEntity(event) {
-    if (!is_player(event.attackingEntity))
-      return;
-    const direction = Vec3.create(event.attackingEntity.getViewDirection());
-    console.warn(direction.toString());
-    const rotation = Quaternion.axis_angle(Vec3.UP, Math.PI / 2);
-    direction.rotate_by(rotation);
-    event.attackingEntity.applyKnockback(direction.x, direction.z, direction.magnitude_squared() * 3, direction.y);
-    const target_health = new HealthAttribute(event.attackingEntity);
-    const n = Math.random() * 1000;
-    target_health.set_bar_number(n);
-    println("N is {} and bar is {}", n, target_health.bar_number());
+  static metralha(entity, n) {
+    shoot_entity(entity, {
+      projectile_id: "minecraft:arrow",
+      direction: Vec3.create(entity.getViewDirection()),
+      force: 3,
+      precision: 1
+    });
+  }
+  onUse(event) {
+    const user = event.source;
+    const direction = Vec3.create(user.getViewDirection());
+    let n = 60;
+    const int = system.runInterval(() => {
+      CustomDiamondComponent.metralha(user, 60);
+      if (n-- == 0)
+        system.clearRun(int);
+    }, 1);
   }
 }
 
 // src/events/initialize.ts
 function initializer(ev) {
-  const tick = system.currentTick;
-  const infos = system.serverSystemInfo;
+  const tick = system2.currentTick;
+  const infos = system2.serverSystemInfo;
   {
     CustomDiamondComponent.setup();
   }
@@ -566,4 +462,4 @@ function initializer(ev) {
 }
 
 // src/main.ts
-world4.beforeEvents.worldInitialize.subscribe(initializer);
+world3.beforeEvents.worldInitialize.subscribe(initializer);

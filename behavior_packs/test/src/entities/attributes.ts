@@ -9,11 +9,14 @@ export enum AttributeNames {
   ManaRegen = 'cy:mana_regen',
   MaxLife = 'cy:max_life',
 
+  DogdeSpeed = 'cy:dodge_speed',
+
   FireResistance = 'cy:fire_res',
   IceResistance = 'cy:ice_res',
   LightningResistance = 'cy:lightining_res',
   DarkResistance = 'cy:dark_res',
   PhysicalResistance = 'cy:phys_res',
+
 }
 
 export const AttributeManager = new class {

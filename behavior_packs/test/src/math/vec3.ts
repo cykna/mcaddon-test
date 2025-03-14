@@ -1,10 +1,22 @@
 import { Quaternion } from "./quaternion";
-export class Vec3 {
+import { Vec2 } from "./vec2";
+
+interface Vect3 {
+  x: number;
+  y: number;
+  z: number;
+}
+
+/**
+ * A representation of a Vector3 instance.
+ * Methods such as Vec3.xy Vec3.xz won't be documented since they return a Vec2 with the given coordinates
+ */
+export class Vec3 implements Vect3 {
   static readonly UP = Object.freeze(new this(0, 1, 0));
   static readonly RIGHT = Object.freeze(new this(1, 0, 0));
   static readonly FORWARD = Object.freeze(new this(0, 0, -1));
 
-  static create<T extends { x: number, y: number, z: number }>(obj: T) {
+  static create(obj: Vect3) {
     return new Vec3(obj.x, obj.y, obj.z);
   }
 
@@ -12,79 +24,70 @@ export class Vec3 {
   /*
   * Returns a new Vec3 representing the addition of the given ones
   */
-  static add(a: Vec3, b: Vec3) {
+  static add(a: Vect3, b: Vect3) {
     return new Vec3(a.x + b.x, a.y + b.y, a.z + b.z);
   }
 
   /*
   * Returns a new Vec3 representing the subtraction of the given ones
   */
-  static sub(a: Vec3, b: Vec3) {
+  static sub(a: Vect3, b: Vect3) {
     return new Vec3(a.x - b.x, a.y - b.y, a.z - b.z);
   }
 
   /*
   * Returns a new Vec3 representing the multiplication of the given ones
   */
-  static mul(a: Vec3, b: Vec3) {
+  static mul(a: Vect3, b: Vect3) {
     return new Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
   }
 
   /*
   * Returns a new Vec3 representing the division of the given ones
   */
-  static div(a: Vec3, b: Vec3) {
+  static div(a: Vect3, b: Vect3) {
     return new Vec3(a.x / b.x, a.y / b.y, a.z / b.z);
   }
 
   /*
   * Returns a new Vec3 representing the scalar addition of the given ones
   */
-  static add_scalar(a: Vec3, n: number) {
+  static add_scalar(a: Vect3, n: number) {
     return new Vec3(a.x + n, a.y + n, a.z + n);
   }
 
   /*
   * Returns a new Vec3 representing the scalar subtraction of the given ones
   */
-  static sub_scalar(a: Vec3, n: number) {
+  static sub_scalar(a: Vect3, n: number) {
     return new Vec3(a.x - n, a.y - n, a.z - n);
   }
 
   /*
   * Returns a new Vec3 representing the scalar multiplication of the given ones
   */
-  static mul_scalar(a: Vec3, n: number) {
+  static mul_scalar(a: Vect3, n: number) {
     return new Vec3(a.x * n, a.y * n, a.z * n);
   }
 
   /*
   * Returns a new Vec3 representing the scalar division of the given ones
   */
-  static div_scalar(a: Vec3, n: number) {
+  static div_scalar(a: Vect3, n: number) {
     return new Vec3(a.x / n, a.y / n, a.z / n);
-  }
-
-  /*
-   * Gets the normalized version of the given vector
-   */
-  static normalized(v: Vec3) {
-    const vec = v.create_copy();
-    vec.normalize();
-    return vec;
   }
 
   /*
    * Returns the negative form of the given vector
    */
-  static negative(v: Vec3) {
+  static negative(v: Vect3) {
     return new Vec3(-v.x, -v.y, -v.z);
   }
 
   /**
    * Returns the cross product between the given 'a' and 'b'
    */
-  static cross(a: Vec3, b: Vec3) {
+  static cross(a: Vect3, b: Vect3) {
     return new Vec3(
       a.y * b.z - a.z * b.y,
       a.z * b.x - a.x * b.z,
@@ -94,19 +97,19 @@ export class Vec3 {
   /*
    * Returns a vector with the minimum values between the given ones
    */
-  static min(a: Vec3, b: Vec3) {
+  static min(a: Vect3, b: Vect3) {
     return new Vec3(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.min(a.z, b.z));
   }
   /*
    * Returns a vector with the maximum values between the given ones
    */
-  static max(a: Vec3, b: Vec3) {
+  static max(a: Vect3, b: Vect3) {
     return new Vec3(Math.max(a.x, b.x), Math.max(a.y, b.y), Math.max(a.z, b.z));
   }
   /*
    * Returns a reference to the vector which has the bigger magnitude
    */
-  static larger(a: Vec3, b: Vec3) {
+  static larger(a: Vect3, b: Vect3) {
     const alen = Math.abs(a.x) + Math.abs(a.y) + Math.abs(a.z);
     const blen = Math.abs(b.x) + Math.abs(b.y) + Math.abs(a.z);
     return alen > blen ? a : b;
@@ -115,7 +118,7 @@ export class Vec3 {
   /*
    * Returns a vector with the reciprocal values of each element
    */
-  static recip(vec: Vec3) {
+  static recip(vec: Vect3) {
     return new Vec3(1 / vec.x, 1 / vec.y, 1 / vec.z);
   }
 
@@ -126,8 +129,34 @@ export class Vec3 {
     const len = 1 / b.magnitude_squared();
     return Vec3.mul_scalar(b, a.dot(b) * len);
   }
-
   constructor(public x = 0, public y = 0, public z = 0) { }
+  xx() {
+    return new Vec2(this.x, this.x);
+  }
+  xy() {
+    return new Vec2(this.x, this.y);
+  }
+  xz() {
+    return new Vec2(this.x, this.z);
+  }
+  yx() {
+    return new Vec2(this.y, this.x);
+  }
+  yy() {
+    return new Vec2(this.y, this.y);
+  }
+  yz() {
+    return new Vec2(this.y, this.z);
+  }
+  zx() {
+    return new Vec2(this.z, this.x);
+  }
+  zy() {
+    return new Vec2(this.z, this.y);
+  }
+  zz() {
+    return new Vec2(this.z, this.z);
+  }
 
   negate() {
     this.x = -this.x;
@@ -143,7 +172,7 @@ export class Vec3 {
   /**
   * Adds the given vector into this one, same as this = Vec3.add(this, rhs);
   */
-  add(rhs: Vec3) {
+  add(rhs: Vect3) {
     this.x += rhs.x;
     this.y += rhs.y;
     this.z += rhs.z;
@@ -153,7 +182,7 @@ export class Vec3 {
   /**
   * Subtracts the given vector into this one, same as this = Vec3.sub(this, rhs);
   */
-  sub(rhs: Vec3) {
+  sub(rhs: Vect3) {
     this.x -= rhs.x;
     this.y -= rhs.y;
     this.z -= rhs.z;
@@ -162,19 +191,19 @@ export class Vec3 {
   /**
   * Multiplies the given vector into this one, same as this = Vec3.mul(this, rhs);
   */
-  mul(rhs: Vec3) {
-    this.x -= rhs.x;
-    this.y -= rhs.y;
-    this.z -= rhs.z;
+  mul(rhs: Vect3) {
+    this.x *= rhs.x;
+    this.y *= rhs.y;
+    this.z *= rhs.z;
     return this;
   }
   /**
   * Divides the given vector into this one, same as this = Vec3.div(this, rhs);
   */
-  div(rhs: Vec3) {
-    this.x -= rhs.x;
-    this.y -= rhs.y;
-    this.z -= rhs.z;
+  div(rhs: Vect3) {
+    this.x /= rhs.x;
+    this.y /= rhs.y;
+    this.z /= rhs.z;
     return this;
   }
   /**
@@ -225,16 +254,23 @@ export class Vec3 {
    * Takes the magnitude squared of this vector
    */
   magnitude() {
-    return Math.pow(this.x * this.x + this.y * this.y + this.z * this.z, 0.5);
+    return (this.x * this.x + this.y * this.y + this.z * this.z) ** 0.5;
   }
-  /*
+  /**
    * Normalizes this vector
    */
   normalize() {
     const len = this.magnitude();
-    if (1 - len < Number.EPSILON) return;
+    if (Math.abs(1 - len) < 2e-4) return this;
     this.mul_scalar(1 / len);
     return this;
+  }
+  /**
+   * Returns a new vector which contains the normalized coordinates of this one
+   */
+  normalized() {
+    const recip = 1 / this.magnitude();
+    return new Vec3(this.x * recip, this.y * recip, this.z * recip);
   }
   /**
    * Sets the magnitude of the vector to be n(or close to it). Same as '(this / this.magnitude()) * n'
@@ -250,20 +286,20 @@ export class Vec3 {
   * Returns if the vector is normalized 
   */
   is_normalized() {
-    return Math.abs(1 - this.magnitude_squared()) < Number.EPSILON;
+    return Math.abs(1 - this.magnitude_squared()) < 2e-4;
   }
 
   /**
   * Returns the cross vector between this and the given vector, same as Vec3.cross(this, rhs);
   */
-  cross(rhs: Vec3) {
+  cross(rhs: Vect3) {
     return Vec3.cross(this, rhs);
   }
 
   /**
    * Set this vector to be the cross product between it and rhs, same as this = this.cross(rhs);
    */
-  set_cross(rhs: Vec3) {
+  set_cross(rhs: Vect3) {
     this.x = this.y * rhs.z - this.z * rhs.y;
     this.y = this.z * rhs.x - this.x * rhs.z;
     this.z = this.x * rhs.y - this.y * rhs.x;
@@ -273,44 +309,46 @@ export class Vec3 {
   /**
    * Calculates the distance squared between this vector and the given one
    */
-  distance_squared(rhs: Vec3) {
-    return Vec3.sub(this, rhs).magnitude_squared()
+  distance_squared(rhs: Vect3) {
+    const x = (this.x - rhs.x) ** 2;
+    const y = (this.y - rhs.y) ** 2;
+    const z = (this.z - rhs.z) ** 2;
+    return x + y + z;
   }
 
   /**
    * Calculates the distancebetween this vector and the given one
    */
-  distance(rhs: Vec3) {
-    return Vec3.sub(this, rhs).magnitude()
+  distance(rhs: Vect3) {
+    const x = (this.x - rhs.x) ** 2;
+    const y = (this.y - rhs.y) ** 2;
+    const z = (this.z - rhs.z) ** 2;
+    return (x + y + z) ** 0.5;
   }
 
   /**
    * Calculates the dot product between this and the given vector
    */
-  dot(rhs: Vec3) {
-    return this.x * rhs.x + this.y * rhs.y + this.z * rhs.z
+  dot(rhs: Vect3) {
+    return this.x * rhs.x + this.y * rhs.y + this.z * rhs.z;
   }
   /**
    * Moves towards the given vector based on dt
-   * obs: Modifies 'rhs' object
    */
-  move_towards(rhs: Vec3, dt: number) {
-    const len = rhs.sub(this).magnitude_squared();
+  move_towards(rhs: Vect3, dt: number) {
+    const len = this.distance_squared(rhs);
     if (len < dt * dt || len <= 1e-2) {
       this.x = rhs.x;
       this.y = rhs.y;
       this.z = rhs.z;
       return this;
-    } else {
-      return this.add(rhs.div_scalar(len * dt))
-    }
+    } else return this.add(Vec3.div_scalar(rhs, len * dt));
   }
   /**
   * Modifies this vector to be the reflection of it and the given one
-  * obs:Modifies 'normal' object
   */
-  reflect(normal: Vec3) {
-    return this.sub(normal.mul_scalar(2 * this.dot(normal)));
+  reflect(normal: Vect3) {
+    return this.sub(Vec3.mul_scalar(normal, 2 * this.dot(normal)));
   }
   /**
   * Returns the angle between this and the given vector in range of [0, +pi]

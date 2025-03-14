@@ -1,26 +1,30 @@
-import { ItemComponentHitEntityEvent, ItemCustomComponent, system, SystemInfo } from "@minecraft/server"
+import { ItemComponentUseEvent, ItemCustomComponent, Player, system, SystemInfo } from "@minecraft/server"
 import { BaseItemComponent } from "..";
 import { Vec3 } from "../../math/vec3";
-import { Quaternion } from "../../math/quaternion";
-import { is_player } from "../../entities/helpers";
-import { HealthAttribute } from "../../entities/player/health";
-import { log, println } from "../../helpers";
-
+import { add_velocity, shoot_entity } from "../../entities/helpers";
+import { AttributeManager, AttributeNames } from "../../entities/attributes";
+import { log } from "../../helpers.ts"
+import { LEN1_BLOCK, MAG1_DIST } from "../../math/constants.ts";
 export default class CustomDiamondComponent extends BaseItemComponent implements ItemCustomComponent {
   static override component_name = "cy:diamond";
   constructor(private tick: number, private info: SystemInfo) {
     super(tick, info);
   }
-  onHitEntity(event: ItemComponentHitEntityEvent): void {
-    if (!is_player(event.attackingEntity)) return;
-    const direction = Vec3.create(event.attackingEntity.getViewDirection());
-    console.warn(direction.toString());
-    const rotation = Quaternion.axis_angle(Vec3.UP, Math.PI / 2);
-    direction.rotate_by(rotation);
-    event.attackingEntity.applyKnockback(direction.x, direction.z, direction.magnitude_squared() * 3, direction.y);
-    const target_health = new HealthAttribute(event.attackingEntity);
-    const n = Math.random() * 1000;
-    target_health.set_bar_number(n);
-    println("N is {} and bar is {}", n, target_health.bar_number());
+  static metralha(entity: Player, n: number) {
+    shoot_entity(entity, {
+      projectile_id: 'minecraft:arrow',
+      direction: Vec3.create(entity.getViewDirection()),
+      force: 3,
+      precision: 1,
+    });
   }
+  onUse(event: ItemComponentUseEvent): void {
+    const user = event.source;
+    const direction = Vec3.create(user.getViewDirection());
+    let n = 60;
+    const int = system.runInterval(() => {
+      CustomDiamondComponent.metralha(user, 60)
+      if (n-- == 0) system.clearRun(int);
+    }, 1);
+  };
 }
