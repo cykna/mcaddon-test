@@ -1,5 +1,5 @@
 // src/main.ts
-import { world as world2 } from "@minecraft/server";
+import { world as world4 } from "@minecraft/server";
 
 // src/events/initialize.ts
 import { system } from "@minecraft/server";
@@ -320,6 +320,212 @@ class Quaternion {
   }
 }
 
+// src/entities/helpers.ts
+import { Player } from "@minecraft/server";
+function is_player(entity) {
+  return entity instanceof Player && entity.typeId == "minecraft:player";
+}
+
+// src/entities/attributes.ts
+import { world } from "@minecraft/server";
+var AttributeManager = new class {
+  id = "none";
+  binded_attribute = "cy:level" /* Level */;
+  bind_target(target) {
+    this.id = target.id;
+  }
+  bind_attribute(attrib) {
+    this.binded_attribute = attrib;
+  }
+  get_attribute(attrib_name, target) {
+    const attrib = (target ?? world.getEntity(this.id))?.getDynamicProperty(attrib_name);
+    if (attrib == undefined)
+      return 0;
+    if (attrib instanceof Number || attrib instanceof Boolean)
+      return +attrib;
+    if (attrib instanceof String || attrib instanceof Object)
+      return 0;
+    return 0;
+  }
+  set_attribute(attrib, n, target) {
+    return (target ?? world.getEntity(this.id))?.setDynamicProperty(attrib, n);
+  }
+  get value() {
+    return this.get_attribute(this.binded_attribute);
+  }
+  set value(n) {
+    this.set_attribute(this.binded_attribute, n);
+  }
+};
+
+// src/entities/damage.ts
+function dmg_type_has(dmg, target) {
+  return (dmg & target) != 0;
+}
+function dmg_resistance(dmg) {
+  switch (dmg) {
+    case 1 /* Fire */:
+      return "cy:fire_res" /* FireResistance */;
+    case 2 /* Ice */:
+      return "cy:ice_res" /* IceResistance */;
+    case 4 /* Lightning */:
+      return "cy:lightining_res" /* LightningResistance */;
+    case 8 /* Dark */:
+      return "cy:dark_res" /* DarkResistance */;
+    case 16 /* Physical */:
+      return "cy:phys_res" /* PhysicalResistance */;
+  }
+}
+function dmg_resistances(dmg) {
+  const out = new Array(5);
+  for (let i = 1, idx = 0;i < 1 << 4; i <<= 1)
+    if (dmg_type_has(dmg, i))
+      out[idx++] = dmg_resistance(i);
+  return out.filter((v) => v != null);
+}
+
+// src/entities/player/health.ts
+class HealthAttribute {
+  target;
+  health;
+  constructor(target) {
+    this.target = target;
+    this.health = target.getComponent("minecraft:health");
+  }
+  max_bar_health() {
+    return this.target.totalXpNeededForNextLevel;
+  }
+  current_bar_health() {
+    return this.target.xpEarnedAtCurrentLevel;
+  }
+  remove_artificial_health() {
+    return this.target.resetLevel();
+  }
+  percentage_of_bar() {
+    return this.bar_number() % 1;
+  }
+  bar_number() {
+    const totalxp = this.target.getTotalXp();
+    if (totalxp <= 352)
+      return (9 + totalxp) ** 0.5 - 3;
+    if (totalxp <= 1507)
+      return ((totalxp - 195.975) * 0.4) ** 0.5 + 8.1;
+    return 18.05 + (0.222 * (totalxp - 752.986)) ** 0.5;
+  }
+  limit_bar_number(n) {
+    if (this.bar_number() > n)
+      this.set_bar_number(n);
+  }
+  set_bar_number(n) {
+    this.target.resetLevel();
+    this.target.addLevels(n);
+  }
+  limit_health(n) {
+    const xp = this.target.getTotalXp();
+    if (xp > n) {
+      this.target.resetLevel();
+      this.target.addExperience(n);
+    }
+  }
+  heal(n) {
+    const maxlife = AttributeManager.get_attribute("cy:max_life" /* MaxLife */, this.target) + 200;
+    if (this.target.getTotalXp() == 0) {
+      let current;
+      if (n > this.health.effectiveMax - (current = this.health.currentValue)) {
+        this.health.resetToMaxValue();
+        this.target.addExperience(Math.min(maxlife, n - current));
+      } else
+        this.health.setCurrentValue(current + n);
+    } else {
+      this.target.addExperience(Math.min(maxlife, n));
+    }
+  }
+  heal_bars(n) {
+    if (this.health.currentValue < this.health.effectiveMax) {
+      this.health.resetToMaxValue();
+      --n;
+    }
+    this.target.addLevels(n);
+  }
+  dmg_val(dmg) {
+    let dmg_val = dmg.inner_damage(this.target);
+    for (const boost of dmg.boosts())
+      dmg_val *= boost.boost_multiplier(this.target);
+    AttributeManager.bind_target(this.target);
+    dmg_val -= AttributeManager.get_attribute("cy:damage_reduction" /* DmgReduction */);
+    for (const dmgres of dmg_resistances(dmg.dmg_type()))
+      dmg_val *= 1 - AttributeManager.get_attribute(dmgres);
+    return (dmg_val + dmg.extraDmg(this.target)) * dmg.damage_multiplier(this.target) * (1 + +(Math.random() > dmg.crit_rate(this.target)) * dmg.crit_damage(this.target));
+  }
+  damage(dmg) {
+    let dmg_val = dmg.inner_damage(this.target);
+    for (const boost of dmg.boosts())
+      dmg_val *= boost.boost_multiplier(this.target);
+    AttributeManager.bind_target(this.target);
+    dmg_val -= AttributeManager.get_attribute("cy:damage_reduction" /* DmgReduction */);
+    for (const dmgres of dmg_resistances(dmg.dmg_type()))
+      dmg_val *= 1 - AttributeManager.get_attribute(dmgres);
+    dmg_val += dmg.extraDmg(this.target);
+    {
+      const crit = +(Math.random() > dmg.crit_rate(this.target));
+      dmg_val *= 1 + crit * dmg.crit_damage(this.target);
+    }
+    dmg_val *= dmg.damage_multiplier(this.target);
+    if (dmg_val > this.total_artificial_health()) {
+      const xp = this.total_artificial_health();
+      dmg_val -= xp;
+      this.target.addExperience(-xp);
+    }
+    this.health.setCurrentValue(this.health.currentValue - +(dmg_val > 0) * dmg_val);
+  }
+  total_artificial_health() {
+    return this.target.getTotalXp();
+  }
+  total_health() {
+    return this.target.getTotalXp() + this.health.currentValue;
+  }
+}
+
+// src/helpers.ts
+import { world as world2 } from "@minecraft/server";
+function log(msg) {
+  world2.sendMessage(msg.toString());
+}
+function format(template, ...args) {
+  let argidx = 0;
+  return template.replace(/{:?x?}/g, (match) => {
+    if (argidx > args.length)
+      throw new Error(`Expected printing ${args.length} args, but number of templates does not match`);
+    const v = args[argidx];
+    if (match === "{}") {
+      if (!v.toString)
+        throw new Error(`Expected ${argidx} to implement 'toString'`);
+      return v.toString();
+    } else if (match === "{:?}") {
+      if (!v.asDbg)
+        throw new Error(`Expected ${argidx} to implement 'asDbg'`);
+      return v.asDbg();
+    } else if (match === "{:x}") {
+      if (!v.toHex)
+        throw new Error(`Expected ${argidx} to implement 'toHex'`);
+      return v.toHex();
+    } else if (match === "{:J}") {
+      if (!v.toJSON)
+        throw new Error(`Expected ${argidx} to implement 'toJSON'`);
+      return v.toJSON();
+    }
+    argidx++;
+    log(match);
+    return match;
+  });
+}
+function println(template, ...args) {
+  log(format(template, ...args));
+}
+Number.prototype.asHex = function() {
+  return this.toString(16);
+};
+
 // src/components/items/custom_diamond.ts
 class CustomDiamondComponent extends BaseItemComponent {
   tick;
@@ -331,12 +537,17 @@ class CustomDiamondComponent extends BaseItemComponent {
     this.info = info;
   }
   onHitEntity(event) {
+    if (!is_player(event.attackingEntity))
+      return;
     const direction = Vec3.create(event.attackingEntity.getViewDirection());
     console.warn(direction.toString());
     const rotation = Quaternion.axis_angle(Vec3.UP, Math.PI / 2);
     direction.rotate_by(rotation);
     event.attackingEntity.applyKnockback(direction.x, direction.z, direction.magnitude_squared() * 3, direction.y);
-    console.warn("Uau porque tão alto?", event);
+    const target_health = new HealthAttribute(event.attackingEntity);
+    const n = Math.random() * 1000;
+    target_health.set_bar_number(n);
+    println("N is {} and bar is {}", n, target_health.bar_number());
   }
 }
 
@@ -355,4 +566,4 @@ function initializer(ev) {
 }
 
 // src/main.ts
-world2.beforeEvents.worldInitialize.subscribe(initializer);
+world4.beforeEvents.worldInitialize.subscribe(initializer);

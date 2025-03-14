@@ -9,7 +9,7 @@
       }
     },
     "components": {
-      "minecraft:icon": "diamond",
+      "minecraft:icon": "hestia",
       "minecraft:display_name": {
         "value": "§aDiamond Customized"
       },
